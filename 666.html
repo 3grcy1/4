@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>课程时间检查工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
+        .container { border: 1px solid #ddd; padding: 20px; border-radius: 8px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; }
+        input, textarea { width: 100%; padding: 8px; margin-bottom: 10px; }
+        button { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { opacity: 0.8; }
+        #result { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>课程时间检查工具</h2>
+        <div class="form-group">
+            <label>选择日期：</label>
+            <input type="datetime-local" id="datePicker">
+        </div>
+        <div class="form-group">
+            <label>输入课程时间（格式示例：TR10:00-11:15,F14:00-15:45）：</label>
+            <textarea id="timeSlots" rows="3" placeholder="例如：T R 10:0-11:15, UM 1:1 - 09:5"></textarea>
+        </div>
+        <button onclick="checkTime()">检查时间</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function checkTime() {
+            const dateStr = document.getElementById('datePicker').value;
+            const timeslots = document.getElementById('timeSlots').value.trim();
+            const resultDiv = document.getElementById('result');
+
+            if (!dateStr || !timeslots) {
+                resultDiv.textContent = "请填写完整日期和时间信息";
+                return;
+            }
+
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) {
+                resultDiv.textContent = "无效的日期格式";
+                return;
+            }
+
+            const pattern = /(\w+)\s*(\d+:\d+)\s*-\s*(\d+:\d+)/gi;
+            let match;
+            let isInSlot = false;
+
+            while ((match = pattern.exec(timeslots)) !== null) {
+                const [, daysStr, startStr, endStr] = match;
+                const days = daysStr.toUpperCase().split('');
+                const start = parseTime(startStr);
+                const end = parseTime(endStr);
+
+                const dayMap = { 'M': 1, 'T': 2, 'W': 3, 'R': 4, 'F': 5, 'S': 0, 'U': 6 };
+                const day = d.getDay();
+                const isMatchDay = days.some(dayChar => dayMap[dayChar] === day);
+
+                if (isMatchDay) {
+                    const currentTime = new Date().setHours(d.getHours(), d.getMinutes(), 0, 0);
+                    const startTime = new Date().setHours(start.h, start.m, 0, 0);
+                    const endTime = new Date().setHours(end.h, end.m, 0, 0);
+                    
+                    if (currentTime >= startTime && currentTime <= endTime) {
+                        isInSlot = true;
+                        break;
+                    }
+                }
+            }
+
+            resultDiv.textContent = isInSlot ? 
+                "当前时间在课程时间范围内！" : 
+                "当前时间不在课程时间范围内。";
+        }
+
+        function parseTime(timeStr) {
+            const [h, m] = timeStr.split(':').map(Number);
+            return { h: h || 0, m: m || 0 };
+        }
+    </script>
+</body>
+</html>
