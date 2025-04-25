@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Beautiful Balloon Simulation</title>
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(to top, #cbefff, #ffffff);
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+<script>
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  const COLORS = ['red', 'orange', 'yellow', 'green', 'black', 'blue', 'purple'];
+  let balloons = [];
+
+  class Balloon {
+    constructor(x, y) {
+      this.x = x;
+      this.y = y;
+      this.radius = 20 + Math.random() * 10;
+      this.growthRate = 0.05 + Math.random() * 0.05;
+      this.speed = 0.5 + Math.random() * 1;
+      this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      this.opacity = 1;
+      this.shadowBlur = 10;
+      this.burstHeight = Math.random() * (canvas.height / 2) + 100;
+      this.bursting = false;
+      this.burstStart = null;
+    }
+
+    update() {
+      if (!this.bursting) {
+        this.y -= this.speed;
+        this.radius += this.growthRate;
+        if (this.y <= this.burstHeight) {
+          this.bursting = true;
+          this.burstStart = Date.now();
+        }
+      } else {
+        const elapsed = Date.now() - this.burstStart;
+        this.opacity = Math.max(0, 1 - elapsed / 300);
+        this.radius += 0.5;
+      }
+    }
+
+    draw() {
+      ctx.save();
+      ctx.globalAlpha = this.opacity;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.shadowColor = this.color;
+      ctx.shadowBlur = this.shadowBlur;
+      ctx.fill();
+      ctx.closePath();
+      ctx.restore();
+    }
+
+    isGone() {
+      return this.bursting && this.opacity <= 0;
+    }
+  }
+
+  function spawnBalloon() {
+    const x = Math.random() * (canvas.width - 100) + 50;
+    const y = canvas.height + 50;
+    balloons.push(new Balloon(x, y));
+  }
+
+  setInterval(spawnBalloon, 1000);
+  for (let i = 0; i < 5; i++) spawnBalloon();
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    balloons.forEach((balloon, index) => {
+      balloon.update();
+      balloon.draw();
+      if (balloon.isGone()) {
+        balloons.splice(index, 1);
+      }
+    });
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+
+  window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  });
+</script>
+</body>
+</html>
